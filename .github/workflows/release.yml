@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build for multiple platforms
+      run: |
+        # Build for Linux
+        GOOS=linux GOARCH=amd64 go build -o wapuugotchi-cli-linux-amd64
+        
+        # Build for macOS
+        GOOS=darwin GOARCH=amd64 go build -o wapuugotchi-cli-darwin-amd64
+        GOOS=darwin GOARCH=arm64 go build -o wapuugotchi-cli-darwin-arm64
+        
+        # Build for Windows
+        GOOS=windows GOARCH=amd64 go build -o wapuugotchi-cli-windows-amd64.exe
+
+    - name: Generate release tag
+      id: tag
+      run: |
+        # Generate a timestamp-based tag
+        TAG="v$(date +'%Y.%m.%d-%H%M%S')"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Release tag: $TAG"
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.tag.outputs.tag }}
+        name: Release ${{ steps.tag.outputs.tag }}
+        body: |
+          🎉 **Wapuugotchi CLI Release** 🎉
+          
+          **Changes in this release:**
+          - Latest updates from commit: ${{ github.sha }}
+          - Built from branch: ${{ github.ref_name }}
+          
+          **Download the appropriate binary for your platform:**
+          - **Linux (x64)**: `wapuugotchi-cli-linux-amd64`
+          - **macOS (Intel)**: `wapuugotchi-cli-darwin-amd64` 
+          - **macOS (Apple Silicon)**: `wapuugotchi-cli-darwin-arm64`
+          - **Windows (x64)**: `wapuugotchi-cli-windows-amd64.exe`
+          
+          **Installation:**
+          1. Download the binary for your platform
+          2. Make it executable (Linux/macOS): `chmod +x wapuugotchi-cli-*`
+          3. Run: `./wapuugotchi-cli-*` (or `wapuugotchi-cli-windows-amd64.exe` on Windows)
+        files: |
+          wapuugotchi-cli-linux-amd64
+          wapuugotchi-cli-darwin-amd64
+          wapuugotchi-cli-darwin-arm64
+          wapuugotchi-cli-windows-amd64.exe
+        draft: false
+        prerelease: false

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 
 	"wapuugotchicli/quiz"
 
@@ -25,6 +24,12 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().
 				PaddingLeft(2).
 				Foreground(lipgloss.Color("170"))
+
+	questionStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Background(lipgloss.Color("#5A5A5A")).
+			Padding(0, 1).
+			MarginBottom(1)
 )
 
 type item string
@@ -58,10 +63,12 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type model struct {
-	list      list.Model
-	textInput textinput.Model
-	choice    string
-	quitting  bool
+	list        list.Model
+	textInput   textinput.Model
+	choice      string
+	quitting    bool
+	currentQuiz *quiz.Quiz
+	quizItems   []list.Item
 }
 
 func (m model) Init() tea.Cmd {
@@ -88,6 +95,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				// Return to main menu
 				m.choice = ""
+				m.currentQuiz = nil
+				m.list.SetItems([]list.Item{
+					item("Quiz"),
+					item("Exit"),
+				})
 				return m, nil
 			}
 		case "enter":
@@ -99,51 +111,63 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if selectedItem == "Exit" {
 						m.quitting = true
 						return m, tea.Quit
-					} else {
+					} else if selectedItem == "Quiz" {
 						m.choice = selectedItem
+						// Get quiz data and set up quiz items
+						quizData := quiz.GetQuiz()
+						if quizData != nil {
+							m.currentQuiz = quizData
+							var quizItems []list.Item
+							for _, option := range quizData.Options {
+								quizItems = append(quizItems, item(fmt.Sprintf("%s", option)))
+							}
+							quizItems = append(quizItems, item("Back to Menu"))
+							m.list.SetItems(quizItems)
+						}
 					}
 				}
-			} else {
-				// Return to main menu when viewing a submenu
-				m.choice = ""
+			} else if m.choice == "Quiz" {
+				// Handle quiz option selection
+				i, ok := m.list.SelectedItem().(item)
+				if ok {
+					selectedItem := string(i)
+					if selectedItem == "Back to Menu" {
+						// Return to main menu
+						m.choice = ""
+						m.currentQuiz = nil
+						m.list.SetItems([]list.Item{
+							item("Quiz"),
+							item("Exit"),
+						})
+					} else {
+						// Handle quiz answer selection here
+						fmt.Printf("Selected answer: %s\n", selectedItem)
+					}
+				}
 			}
 			return m, nil
 		}
 	}
 
-	// Only update the list when we're in the main menu
-	if m.choice == "" {
-		var cmd tea.Cmd
-		m.list, cmd = m.list.Update(msg)
-		return m, cmd
-	}
-
-	return m, nil
+	// Update the list
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
 }
 
 func (m model) View() string {
-	switch m.choice {
-	case "Quiz":
-		return quiz.Display() + "\nPress enter to return to the menu."
-	case "View Files":
-		filesText := listFiles()
-		return filesText + "\nPress enter to return to the menu."
-	}
-
 	if m.quitting {
-		return "\nGoodbye!\n"
-	}
-	return "\n" + titleStyle.Render("Wapuugotchi CLI") + "\n\n" + m.list.View()
-}
-
-func listFiles() string {
-	cmd := exec.Command("ls", "-l")
-	output, err := cmd.Output()
-	if err != nil {
-		return "Error executing ls -l: " + err.Error()
+		return ""
 	}
 
-	return "Files in current directory:\n" + string(output)
+	var header string
+	if m.choice == "Quiz" && m.currentQuiz != nil {
+		header = questionStyle.Render(m.currentQuiz.Question)
+	} else {
+		header = titleStyle.Render("Wapuugotchi CLI")
+	}
+
+	return "\n" + header + "\n\n" + m.list.View()
 }
 
 func main() {

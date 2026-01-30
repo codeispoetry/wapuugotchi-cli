@@ -2,15 +2,15 @@ package quiz
 
 import (
 	"io"
-	"net/http"
 	"math/rand"
+	"net/http"
 	"strings"
 )
 
 // Quiz represents one quiz question
 type Quiz struct {
-	Question      string
-	Options       []string
+	Question string
+	Options  []string
 }
 
 func Display() string {
@@ -36,16 +36,13 @@ func getData() string {
 	randomIndex := rand.Intn(len(quizzes))
 	randomIndex = 0 // for testing purposes, always pick the first quiz
 	result.WriteString(quizzes[randomIndex].Question)
-	for i, option := range quizzes[randomIndex].Options {
+	for _, option := range quizzes[randomIndex].Options {
 		result.WriteString("\n")
-		result.WriteString(string('A' + i))
-		result.WriteString(". ")
 		result.WriteString(option)
 	}
 
-
 	result.WriteString("\n")
-	
+
 	return result.String()
 }
 
@@ -69,15 +66,13 @@ func parseQuiz(php string) []Quiz {
 				}
 			}
 
-
 			var options []string
 			optionLine := lines[i+3]
-			
-			
+
 			for len(optionLine) > 60 {
 				start := strings.Index(optionLine, "__( '")
 				end := strings.Index(optionLine, "', 'wapuugotchi' )")
-				
+
 				if start != -1 && end != -1 {
 					optionText := optionLine[start+5 : end]
 					options = append(options, optionText)
@@ -87,17 +82,37 @@ func parseQuiz(php string) []Quiz {
 				}
 			}
 
-
 			quizzes = append(quizzes, Quiz{
-				Question:      question,
-				Options:       options,
+				Question: question,
+				Options:  options,
 			})
 		}
-	
+
 	}
 
-		
-	
-
 	return quizzes
+}
+
+// GetQuiz returns a random quiz question
+func GetQuiz() *Quiz {
+	resp, err := http.Get("https://raw.githubusercontent.com/wapuugotchi/wapuugotchi/refs/heads/main/inc/games/quiz/data/QuizWordPress.php")
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
+
+	quizzes := parseQuiz(string(body))
+	if len(quizzes) == 0 {
+		return nil
+	}
+
+	randomIndex := rand.Intn(len(quizzes))
+	randomIndex = 0 // for testing purposes, always pick the first quiz
+
+	return &quizzes[randomIndex]
 }
