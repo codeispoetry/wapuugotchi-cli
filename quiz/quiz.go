@@ -11,43 +11,39 @@ import (
 type Quiz struct {
 	Question string
 	Options  []string
+	Correct  int
 }
 
-func Display() string {
-	return "\n" + getData()
+var Quests []Quiz = getQuiz()
+
+func GetRandomQuest() Quiz {
+	index := rand.Intn(len(Quests))
+	return Quests[index]
 }
 
-func getData() string {
+
+
+func getQuiz() []Quiz {
 	resp, err := http.Get("https://raw.githubusercontent.com/wapuugotchi/wapuugotchi/refs/heads/main/inc/games/quiz/data/QuizWordPress.php")
 	if err != nil {
-		return "Error fetching quiz data: " + err.Error()
+		return nil
 	}
 	defer resp.Body.Close()
 
+	
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "Error reading quiz data: " + err.Error()
+		return nil
 	}
 
-	quizzes := parseQuiz(string(body))
-
-	var result strings.Builder
-
-	randomIndex := rand.Intn(len(quizzes))
-	randomIndex = 0 // for testing purposes, always pick the first quiz
-	result.WriteString(quizzes[randomIndex].Question)
-	for _, option := range quizzes[randomIndex].Options {
-		result.WriteString("\n")
-		result.WriteString(option)
+	quizzes := parsePHP(string(body))
+	if len(quizzes) == 0 {
+		return nil
 	}
-
-	result.WriteString("\n")
-
-	return result.String()
+	return quizzes
 }
 
-// parsePHPQuiz extracts quiz questions from a PHP string
-func parseQuiz(php string) []Quiz {
+func parsePHP(php string) []Quiz {
 	var quizzes []Quiz
 
 	lines := strings.Split(php, "\n")
@@ -66,53 +62,44 @@ func parseQuiz(php string) []Quiz {
 				}
 			}
 
+			correct := lines[i+4]
+			correctStart := strings.Index(correct, "__( '")
+			correctEnd := strings.Index(correct, "', 'wapuugotchi' )")
+			if correctStart != -1 && correctEnd != -1 {
+				correct = correct[correctStart+5 : correctEnd]
+			}
+
 			var options []string
+
 			optionLine := lines[i+3]
 
-			for len(optionLine) > 60 {
+			for len(optionLine) > 10 {
 				start := strings.Index(optionLine, "__( '")
 				end := strings.Index(optionLine, "', 'wapuugotchi' )")
 
 				if start != -1 && end != -1 {
 					optionText := optionLine[start+5 : end]
 					options = append(options, optionText)
-					optionLine = optionLine[end+18:] // Skip past the closing pattern
+					optionLine = optionLine[end+18:]
 				} else {
 					break // Exit if pattern not found
 				}
 			}
 
+
+			// Insert correct answer at random position
+			insertPos := rand.Intn(len(options) + 1)
+			options = append(options[:insertPos], append([]string{correct}, options[insertPos:]...)...)
+
+	
 			quizzes = append(quizzes, Quiz{
 				Question: question,
 				Options:  options,
+				Correct: insertPos,
 			})
 		}
 
 	}
 
 	return quizzes
-}
-
-// GetQuiz returns a random quiz question
-func GetQuiz() *Quiz {
-	resp, err := http.Get("https://raw.githubusercontent.com/wapuugotchi/wapuugotchi/refs/heads/main/inc/games/quiz/data/QuizWordPress.php")
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil
-	}
-
-	quizzes := parseQuiz(string(body))
-	if len(quizzes) == 0 {
-		return nil
-	}
-
-	randomIndex := rand.Intn(len(quizzes))
-	randomIndex = 0 // for testing purposes, always pick the first quiz
-
-	return &quizzes[randomIndex]
 }
