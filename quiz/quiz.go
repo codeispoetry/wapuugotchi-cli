@@ -12,6 +12,8 @@ type Quiz struct {
 	Question string
 	Options  []string
 	Correct  int
+	FeedbackCorrect   string
+	FeedbackIncorrect string
 }
 
 var Quests []Quiz = getQuiz()
@@ -69,6 +71,20 @@ func parsePHP(php string) []Quiz {
 				correct = correct[correctStart+5 : correctEnd]
 			}
 
+			feedbackCorrect := lines[i+5]
+			feedbackCorrectStart := strings.Index(feedbackCorrect, "__( '")
+			feedbackCorrectEnd := strings.Index(feedbackCorrect, "', 'wapuugotchi' )")
+			if feedbackCorrectStart != -1 && feedbackCorrectEnd != -1 {
+				feedbackCorrect = feedbackCorrect[feedbackCorrectStart+5 : feedbackCorrectEnd]
+			}
+
+			feedbackIncorrect := lines[i+6]
+			feedbackIncorrectStart := strings.Index(feedbackIncorrect, "__( '")
+			feedbackIncorrectEnd := strings.Index(feedbackIncorrect, "', 'wapuugotchi' )")
+			if feedbackIncorrectStart != -1 && feedbackIncorrectEnd != -1 {
+				feedbackIncorrect = feedbackIncorrect[feedbackIncorrectStart+5 : feedbackIncorrectEnd]
+			}
+
 			var options []string
 
 			optionLine := lines[i+3]
@@ -96,6 +112,8 @@ func parsePHP(php string) []Quiz {
 				Question: question,
 				Options:  options,
 				Correct: insertPos,
+				FeedbackCorrect:   feedbackCorrect,
+				FeedbackIncorrect: feedbackIncorrect,
 			})
 		}
 

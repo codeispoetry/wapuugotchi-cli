@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 	"wapuugotchicli/quiz"
 	"os/exec"
 	"runtime"
@@ -18,7 +17,7 @@ func main() {
 	fmt.Println("Welcome to the WapuuGotchi Quiz!")
 	fmt.Println("Answer the questions by typing the number of your choice and pressing Enter.")
 	fmt.Println("Press Enter without typing anything to exit.\n")
-	fmt.Println("To start the game, press Enter to start the quiz.")
+	fmt.Println("Press any key to start...")
 	fmt.Println()
 	
 	reader.ReadString('\n')
@@ -41,6 +40,7 @@ func main() {
 		}
 
 		input, _ := reader.ReadString('\n')
+
 		input = strings.TrimSpace(input)
 
 		// Check if input is a valid number
@@ -52,13 +52,15 @@ func main() {
 
 		switch input {
 		case fmt.Sprintf("%d", quest.Correct+1):
-			fmt.Println("You are correct! Yeah, great job! 🎉")
+			fmt.Println("🎉 " + quest.FeedbackCorrect)
 			correctAnswers++
 		default:
-			fmt.Println("Sorry, that's incorrect. That is sad. 😢")
+			fmt.Println("😢 " + quest.FeedbackIncorrect)
 		}
 
-		time.Sleep(1 * time.Second)
+
+		fmt.Println("\nPress Enter to continue...")
+		reader.ReadString('\n')
 	}
 }
 
