@@ -75,14 +75,14 @@ func parsePHP(php string) []Quiz {
 			feedbackCorrectStart := strings.Index(feedbackCorrect, "__( '")
 			feedbackCorrectEnd := strings.Index(feedbackCorrect, "', 'wapuugotchi' )")
 			if feedbackCorrectStart != -1 && feedbackCorrectEnd != -1 {
-				feedbackCorrect = feedbackCorrect[feedbackCorrectStart+5 : feedbackCorrectEnd]
+				feedbackCorrect = feedbackCorrect[feedbackCorrectStart+22 : feedbackCorrectEnd]
 			}
 
 			feedbackIncorrect := lines[i+6]
 			feedbackIncorrectStart := strings.Index(feedbackIncorrect, "__( '")
 			feedbackIncorrectEnd := strings.Index(feedbackIncorrect, "', 'wapuugotchi' )")
 			if feedbackIncorrectStart != -1 && feedbackIncorrectEnd != -1 {
-				feedbackIncorrect = feedbackIncorrect[feedbackIncorrectStart+5 : feedbackIncorrectEnd]
+				feedbackIncorrect = feedbackIncorrect[feedbackIncorrectStart+38 : feedbackIncorrectEnd]
 			}
 
 			var options []string
@@ -116,7 +116,6 @@ func parsePHP(php string) []Quiz {
 				FeedbackIncorrect: feedbackIncorrect,
 			})
 		}
-
 	}
 
 	return quizzes

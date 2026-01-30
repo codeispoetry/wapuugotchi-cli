@@ -43,9 +43,7 @@ func main() {
 
 		input = strings.TrimSpace(input)
 
-		// Check if input is a valid number
 		if input == "" {
-
 			fmt.Println("Good bye.")
 			return
 		}
